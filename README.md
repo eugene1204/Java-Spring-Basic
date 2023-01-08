@@ -201,7 +201,7 @@
 
 - 기능을 확장할 가능성이 없다면, 구체 클래스를 직접 사용하고, 향후 꼭 필요할 때 리팩터링해서 인터페이스를 도입하는 것도 방법이다.
 
-# 스프링 핵심 원리 이해1 - 예제만들기 
+# 1. 스프링 핵심 원리 이해1 - 예제만들기 
 ## 비즈니스 요구사항과 설계
 - 회원
   - 회원을 가입하고 조회할 수 있다.
@@ -241,7 +241,166 @@
 > 실제 서버에 올라온다면 객체간의 참조가 어떻게 되는지
 > 회원서비스: MemberServiceImpl
 
+### 회원 도메인 개발 
+#### 회원 엔티티 - 회원 등급 
+```
+package hello.core.member;
+
+public enum Grade {
+    BASIC,
+    VIP
+}
+```
+
+#### 회원 엔티티 - 회원 엔티티
+```
+package hello.core.member;
+
+public class Member {
+    private Long id;
+    private String name;
+    private Grade grade;
+
+    public Member(Long id, String name, Grade grade) {
+        this.id = id;
+        this.name = name;
+        this.grade = grade;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Grade getGrade() {
+        return grade;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setGrade(Grade grade) {
+        this.grade = grade;
+    }
+}
+```
+
+#### 회원 저장소 - 회원 저장소 인터페이스
+```
+package hello.core.member;
+
+public interface MemberRepository {
+    void save(Member member);
+    Member findById(Long memberId);
+}
+```
+
+#### 회원 저장소 - 메모리 회원 저장소 구현체
+데이터베이스가 아직 확정이 안되었다. 그래도 개발은 진행해야 하니 가장 단순한, 메모리 회원 저장소를
+구현해서 우선 개발을 진행하자.
+> 참고: HashMap 은 동시성 이슈가 발생할 수 있다. 이런 경우 ConcurrentHashMap 을 사용하자.
+
+```
+package hello.core.member;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class MemoryMemberRepository implements MemberRepository{
+    // 동시성 이슈가 있을 수 있어서 다른 맵을 사용해야한다 정도만 알아두자
+    private static Map<Long, Member> store = new HashMap<>();
+
+    @Override
+    public void save(Member member) {
+        store.put(member.getId(), member);
+    }
+
+    @Override
+    public Member findById(Long memberId) {
+        return store.get(memberId);
+    }
+}
+```
+
+#### 회원 서비스 - 회원 서비스 인터페이스
+```
+package hello.core.member;
+
+public interface MemberService {
+    void join(Member member);   // 회원가입
+    Member findMember(Long memberId); // 회원조회
+}
+```
+
+#### 회원 서비스 - 회원 서비스 구현체
+```
+package hello.core.member;
+
+public class MemberServiceImpl implements MemberService{
+    // 구현체가 하나만있으면 그냥 뒤에 impl을 붙인다.
+    private final MemberRepository memberRepository = new MemoryMemberRepository();
+    @Override
+    public void join(Member member) {
+        memberRepository.save(member);
+    }
+
+    @Override
+    public Member findMember(Long memberId) {
+        return memberRepository.findById(memberId);
+    }
+}
+```
+
 ### 회원 도메인 실행과 테스트
+#### 회원 도메인 - 회원 가입 main
+```
+package hello.core.member;
+
+public class MemberApp {
+    public static void main(String[] args) {
+        MemberService memberService = new MemberServiceImpl();
+        Member member = new Member(1L, "memberA", Grade.VIP);
+        memberService.join(member);
+
+        Member findMember = memberService.findMember(1L);
+        System.out.println("new member "+member.getName());
+        System.out.println("new member "+findMember.getName());
+    }
+}
+```
+
+#### 회원 도메인 - 회원 가입 테스트
+```
+package hello.core.member;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class MemberServiceTest {
+    MemberService memberService = new MemberServiceImpl();
+    @Test
+    void join() {
+        // given
+        Member member = new Member(1L, "member", Grade.VIP);
+        // when
+        memberService.join(member);
+        Member findMember = memberService.findMember(1L);
+        // then
+        Assertions.assertThat(member).isEqualTo(findMember);
+    }
+}
+
+```
+
 
 > MemberServiceImpl에 문제가 있다. 인터페이스에 의족하지만 실제 할당하는 게 구현체를 할당 
 > 추상화, 구체화에 둘다 의존 -> DIP 원칙을 준수하지 않음
@@ -268,3 +427,400 @@
 
 #### 주문도메인 객체 다이어그램1
 > 
+> 
+
+### 주문과 할인 도메인 개발 
+#### 할인 정책 인터페이스
+```
+package hello.core.discount;
+
+import hello.core.member.Member;
+
+public interface DiscountPolicy {
+    // @return이 할인 대상금액
+    int discount(Member member, int price);
+}
+```
+
+#### 정액 할인 정책 구현체
+```
+package hello.core.discount;
+
+import hello.core.member.Grade;
+import hello.core.member.Member;
+
+public class FixDiscountPolicy implements DiscountPolicy{
+    private int discountFixAount =1000;
+    @Override
+    public int discount(Member member, int price) {
+        if(member.getGrade() == Grade.VIP){
+            return discountFixAount;
+        }else {
+            return 0;
+        }
+    }
+}
+```
+
+#### 주문 엔티티
+```
+package hello.core.order;
+
+public class Order {
+    private Long memberId;
+    private String itemName;
+    private int itemPrice;
+    private int discountPrice;
+
+    public Order(Long memberId, String itemName, int itemPrice, int discountPrice) {
+        this.memberId = memberId;
+        this.itemName = itemName;
+        this.itemPrice = itemPrice;
+        this.discountPrice = discountPrice;
+    }
+
+    public int calculatePrice() {
+        return itemPrice - discountPrice;
+    }
+
+    public Long getMemberId() {
+        return memberId;
+    }
+
+    public void setMemberId(Long memberId) {
+        this.memberId = memberId;
+    }
+
+    public String getItemName() {
+        return itemName;
+    }
+
+    public void setItemName(String itemName) {
+        this.itemName = itemName;
+    }
+
+    public int getItemPrice() {
+        return itemPrice;
+    }
+
+    public void setItemPrice(int itemPrice) {
+        this.itemPrice = itemPrice;
+    }
+
+    public int getDiscountPrice() {
+        return discountPrice;
+    }
+
+    public void setDiscountPrice(int discountPrice) {
+        this.discountPrice = discountPrice;
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "memberId=" + memberId +
+                ", itemName='" + itemName + '\'' +
+                ", itemPrice=" + itemPrice +
+                ", discountPrice=" + discountPrice +
+                '}';
+    }
+}
+
+```
+
+#### 주문 서비스 인터페이스
+```
+package hello.core.order;
+
+public interface OrderService {
+    Order createOrder(Long memberId, String itemName, int itemPrice);
+}
+
+```
+
+#### 주문 서비스 구현체
+```
+package hello.core.order;
+
+import hello.core.discount.DiscountPolicy;
+import hello.core.discount.FixDiscountPolicy;
+import hello.core.discount.RateDiscountPolicy;
+import hello.core.member.Member;
+import hello.core.member.MemberRepository;
+import hello.core.member.MemoryMemberRepository;
+
+public class OrderServiceImpl implements OrderService{
+    private final MemberRepository memberRepository = new MemoryMemberRepository();
+    private final DiscountPolicy discountPolicy = new FixDiscountPolicy();
+
+    @Override
+    public Order createOrder(Long memberId, String itemName, int itemPrice) {
+        Member member = memberRepository.findById(memberId);
+        int discountPrice = discountPolicy.discount(member, itemPrice);
+        return new Order(memberId, itemName, itemPrice, discountPrice);
+        /*
+        * 설계가 잘된이유
+        * 오더서비스는 할인에 대해서 몰라도된다.
+        * 할인은 디스카운트폴리시가 해결하고 값만 얄려준다
+        * 할인에 대한 문제를 해결하는건 디스카운트폴리시에서 알아서한다.
+        * */
+    }
+}
+
+```
+
+### 주문과 할인 도메인 실행과 테스트
+#### 주문과 할인 정책 실행
+```
+package hello.core;
+
+import hello.core.member.Grade;
+import hello.core.member.Member;
+import hello.core.member.MemberService;
+import hello.core.member.MemberServiceImpl;
+import hello.core.order.Order;
+import hello.core.order.OrderService;
+import hello.core.order.OrderServiceImpl;
+
+public class OrderApp {
+    public static void main(String[] args) {
+        MemberService memberService = new MemberServiceImpl();
+        OrderService orderService = new OrderServiceImpl();
+        Long memberId = 1L;
+        Member member = new Member(memberId, "memberA", Grade.VIP);
+        memberService.join(member);
+        Order order = orderService.createOrder(memberId, "item", 10000);
+        System.out.println("order = "+ order);
+    }
+}
+
+```
+
+#### 주문과 할인 정책 테스트
+```
+package hello.core.member.order;
+import hello.core.member.Grade;
+import hello.core.member.Member;
+import hello.core.member.MemberService;
+import hello.core.member.MemberServiceImpl;
+import hello.core.order.Order;
+import hello.core.order.OrderService;
+import hello.core.order.OrderServiceImpl;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+
+public class OrderServiceTest {
+    MemberService memberService = new MemberServiceImpl();
+    OrderService orderService = new OrderServiceImpl();
+
+    @Test
+    void createOrder() {
+        Long memberId = 1L;
+        Member member = new Member(memberId, "memberA", Grade.VIP);
+        memberService.join(member);
+        Order order = orderService.createOrder(memberId, "itemA", 10000);
+        Assertions.assertThat(order.getDiscountPrice()).isEqualTo(1000);
+    }
+}
+
+```
+
+
+# 3. 스프링 핵심 원리 이해2 - 객체 지향 원리 적용 
+## 새로운 할인 정책 개발 
+### 새로운 할인 정책을 확장해보자 
+- 악덕 기획자: 서비스 오픈 직전에 할인 정책을 지금처럼 고정 금액 할인이 아니라 좀 더 합리적인 주문 금액당 할인하는 정률% 할인으로 변경하고 싶어요. 예를 들어서 기존 정책은 VIP가 10000원을 주문하든 20000원을 주문하든 항상 1000원을 할인했는데, 이번에 새로 나온 정책은 10%로 지정해두면 고객이 10000원 주문시 1000원을 할인해주고, 20000원 주문시에 2000원을 할인해주는 거에요!
+- 순진 개발자: 제가 처음부터 고정 금액 할인은 아니라고 했잖아요.
+- 악덕 기획자: 애자일 소프트웨어 개발 선언 몰라요? “계획을 따르기보다 변화에 대응하기를”
+- 순진 개발자: ... (하지만 난 유연한 설계가 가능하도록 객체지향 설계 원칙을 준수했지 후후)
+
+### RateDiscountPolicy 추가 
+
+### RateDiscountPolicy 코드 
+
+## 새로운 할인 정책 적용과 문제점
+```
+private final MemberRepository memberRepository = new MemoryMemberRepository();
+//    private final DiscountPolicy discountPolicy = new FixDiscountPolicy();
+private final DiscountPolicy discountPolicy = new RateDiscountPolicy();
+```
+> 실제 적용을 하려면 OrderServiceImpl로 들어가야함 
+
+### 문제점 발견
+- 우리는 역할과 구현을 충실하게 분리했다. OK
+- 다형성도 활용하고, 인터페이스와 구현 객체를 분리했다. OK OCP, DIP 같은 객체지향 설계 원칙을 충실히 준수했다
+그렇게 보이지만 사실은 아니다.
+- DIP: 주문서비스 클라이언트( OrderServiceImpl )는 DiscountPolicy 인터페이스에 의존하면서 DIP를 지킨 것 같은데?
+  - 클래스 의존관계를 분석해 보자. 추상(인터페이스) 뿐만 아니라 구체(구현) 클래스에도 의존하고 있다.
+  추상(인터페이스) 의존: DiscountPolicy
+  구체(구현) 클래스: FixDiscountPolicy , RateDiscountPolicy OCP: 변경하지 않고 확장할 수 있다고 했는데!
+  지금 코드는 기능을 확장해서 변경하면, 클라이언트 코드에 영향을 준다! 따라서 OCP를 위반한다.
+
+```
+public class OrderServiceImpl implements OrderService{
+  private final MemberRepository memberRepository = new MemoryMemberRepository();
+  private DiscountPolicy discountPolicy;
+          ... 
+}
+```
+> 인터페이스에만 의존하게 하자! -> but, NullPointException 발생
+
+
+## 관심사의 분리 
+- 애플리케이션을 하나의 공연이라 생각해보자. 각각의 인터페이스를 배역(배우 역할)이라 생각하자. 그런데! 실제 배역 맞는 배우를 선택하는 것은 누가 하는가?
+- 로미오와 줄리엣 공연을 하면 로미오 역할을 누가 할지 줄리엣 역할을 누가 할지는 배우들이 정하는게 아니다. 이전 코드는 마치 로미오 역할(인터페이스)을 하는 레오나르도 디카프리오(구현체, 배우)가 줄리엣 역할(인터페이스)을 하는 여자 주인공(구현체, 배우)을 직접 초빙하는 것과 같다. 디카프리오는 공연도 해야하고 동시에 여자 주인공도 공연에 직접 초빙해야 하는 다양한 책임을 가지고 있다.
+
+***관심사를 분리하자***
+- 배우는 본인의 역할인 배역을 수행하는 것에만 집중해야 한다.
+- 디카프리오는 어떤 여자 주인공이 선택되더라도 똑같이 공연을 할 수 있어야 한다.
+- 공연을 구성하고, 담당 배우를 섭외하고, 역할에 맞는 배우를 지정하는 책임을 담당하는 별도의 ***공연 기획자***가 나올시점이다.
+- 공연 기획자를 만들고, 배우와 공연 기획자의 책임을 확실히 분리하자.
+
+> 이전 코드는 로미오 역할을 하는 배우가 줄리엣 역할의 배우를 직접 초빙하는 것과 같다. 
+
+### AppConfig 등장
+- 애플리케이션의 전체 동작 방식을 구성(config)하기 위해, 구현 객체를 생성하고, 연결하는 책임을 가지는 별도의 설정 클래스를 만들자.
+
+#### AppConfig 
+```
+public class AppConfig {
+    public MemberService memberService() {
+        return new MemberServiceImpl(new MemoryMemberRepository());
+    }
+    public OrderService orderService() {
+        return new OrderServiceImpl(
+                new MemoryMemberRepository(),
+                new FixDiscountPolicy());
+    }
+}
+```
+
+#### 그림 - 클래스 다이어그램 
+
+> AppConfig MemberServiceImpl, MemoryMemberRepository 를 생성한다.
+
+
+## AppConfig 리팩터링 
+```
+package hello.core;
+
+import hello.core.discount.DiscountPolicy;
+import hello.core.discount.FixDiscountPolicy;
+import hello.core.member.MemberRepository;
+import hello.core.member.MemberService;
+import hello.core.member.MemberServiceImpl;
+import hello.core.member.MemoryMemberRepository;
+import hello.core.order.OrderService;
+import hello.core.order.OrderServiceImpl;
+
+public class AppConfig {
+    public MemberService memberService() {
+        return new MemberServiceImpl(memberRepository());
+    }
+    public MemberRepository memberRepository() {
+        return new MemoryMemberRepository();
+    }
+    public OrderService orderService() {
+        return new OrderServiceImpl(
+                memberRepository(),
+                new FixDiscountPolicy());
+    }
+    public DiscountPolicy discountPolicy() {
+        return new FixDiscountPolicy();
+    }
+}
+```
+
+## 새로운 구조와 할인 정책 적용
+- 처음으로 돌아가서 정액 할인 정책을 정률% 할인 정책으로 변경해보자. 
+- FixDiscountPolicy RateDiscountPolicy
+- 어떤 부분만 변경하면 되겠는가?
+
+AppConfig의 등장으로 애플리케이션이 크게 사용 영역과, 객체를 생성하고 구성(Configuration)하는 영역으로 분리되었다.
+
+#### 그림 - 사용, 구성의 분리 
+
+#### 할인 정책 변경 구성 코드
+```
+package hello.core;
+
+import hello.core.discount.DiscountPolicy;
+import hello.core.discount.FixDiscountPolicy;
+import hello.core.discount.RateDiscountPolicy;
+import hello.core.member.MemberRepository;
+import hello.core.member.MemberService;
+import hello.core.member.MemberServiceImpl;
+import hello.core.member.MemoryMemberRepository;
+import hello.core.order.OrderService;
+import hello.core.order.OrderServiceImpl;
+
+public class AppConfig {
+    public MemberService memberService() {
+        return new MemberServiceImpl(memberRepository());
+    }
+    public MemberRepository memberRepository() {
+        return new MemoryMemberRepository();
+    }
+    public OrderService orderService() {
+        return new OrderServiceImpl(
+                memberRepository(),
+                new FixDiscountPolicy());
+    }
+    public DiscountPolicy discountPolicy() {
+//        return new FixDiscountPolicy();
+        return new RateDiscountPolicy();
+    }
+}
+```
+
+## 전체 흐름 정리 
+### 새로운 할인 정책 개발 
+> 정액 할인 -> 정률 할인 정책 만들기 
+
+### 새로운 할인 정책 적용과 문제점 
+새로 개발한 정률 할인 정책을 적용하려고 하니 클라이언트 코드인 주문 서비스 구현체도 함께 변경해야함 -> OCP위반
+주문 서비스 클라이언트가 인터페이스인 DiscountPolicy 뿐만 아니라, 구체 클래스인 FixDiscountPolicy 도 함께 의존 DIP 위반
+> 주문서비스 구현체가 많은 역할을 하고 있었음, fix... 생성 등등
+
+### 관심사를 분리 
+- 애플리케이션을 하나의 공연으로 생각
+- 기존에는 클라이언트가 의존하는 서버 구현 객체를 직접 생성하고, 실행함
+- 비유를 하면 기존에는 남자 주인공 배우가 공연도 하고, 동시에 여자 주인공도 직접 초빙하는 다양한 책임을 가지고 있음
+- 공연을 구성하고, 담당 배우를 섭외하고, 지정하는 책임을 담당하는 별도의 공연 기획자가 나올 시점
+- 공연 기획자인 AppConfig가 등장
+- AppConfig는 애플리케이션의 전체 동작 방식을 구성(config)하기 위해, 구현 객체를 생성하고, 연결하는 책임
+- 이제부터 클라이언트 객체는 자신의 역할을 실행하는 것만 집중, 권한이 줄어듬(책임이 명확해짐)
+
+### AppConfig 리팩터링 
+구성 정보에서 역할과 구현을 명확하게 
+분리 역할이 잘 드러남
+중복 제거
+
+### 새로운 구조와 할인 정책 적용 
+- 정액 할인 정책 정률% 할인 정책으로 변경
+- AppConfig의 등장으로 애플리케이션이 크게 사용 영역과, 객체를 생성하고 구성(Configuration)하는 영역으로 분리
+- 할인 정책을 변경해도 AppConfig가 있는 구성 영역만 변경하면 됨, 사용 영역은 변경할 필요가 없음. 물론 클라이언트 코드인 주문 서비스 코드도 변경하지 않음
+
+## 좋은 객체 지향 설계의 5가지 원칙의 적용 
+***SRP, DIP, OCP***
+
+### SRP 
+***한 클래스는 하나의 책임만 가져야 한다.***
+클라이언트 객체는 직접 구현 객체를 생성하고, 연결하고, 실행하는 다양한 책임을 가지고 있음 SRP 단일 책임 원칙을 따르면서 관심사를 분리함
+구현 객체를 생성하고 연결하는 책임은 AppConfig가 담당
+클라이언트 객체는 실행하는 책임만 담당
+
+### DIP 
+***프로그래머는 “추상화에 의존해야지, 구체화에 의존하면 안된다.” 의존성 주입은 이 원칙을 따르는 방법 중 하나다.***
+새로운 할인 정책을 개발하고, 적용하려고 하니 클라이언트 코드도 함께 변경해야 했다. 왜냐하면 기존 클라이언트 코드( OrderServiceImpl )는 DIP를 지키며 DiscountPolicy 추상화 인터페이스에 의존하는 것 같았지만, FixDiscountPolicy 구체화 구현 클래스에도 함께 의존했다.
+클라이언트 코드가 DiscountPolicy 추상화 인터페이스에만 의존하도록 코드를 변경했다.
+하지만 클라이언트 코드는 인터페이스만으로는 아무것도 실행할 수 없다.
+AppConfig가 FixDiscountPolicy 객체 인스턴스를 클라이언트 코드 대신 생성해서 클라이언트 코드에 의존관계를 주입했다. 이렇게해서 DIP 원칙을 따르면서 문제도 해결했다.
+
+### OCP 
+***소프트웨어 요소는 확장에는 열려 있으나 변경에는 닫혀 있어야 한다***
+다형성 사용하고 클라이언트가 DIP를 지킴
+애플리케이션을 사용 영역과 구성 영역으로 나눔
+AppConfig가 의존관계를 FixDiscountPolicy RateDiscountPolicy 로 변경해서 클라이언트 코드에 주입하므로 클라이언트 코드는 변경하지 않아도 됨
+소프트웨어 요소를 새롭게 확장해도 사용 영역의 변경은 닫혀 있다!
