@@ -28,4 +28,8 @@ public class OrderServiceImpl implements OrderService{
         * 할인에 대한 문제를 해결하는건 디스카운트폴리시에서 알아서한다.
         * */
     }
+    // 테스트용도
+    public MemberRepository getMemberRepository() {
+        return memberRepository;
+    }
 }

@@ -12,8 +12,7 @@ public class BeanDefinitionTest {
     // 사용하면 getBeanDefinition을 사용할 수 없다.
     // GenericXmlApplicationContext ac = new GenericXmlApplicationContext("appConfig.xml");
     @Test
-    @DisplayName("빈 설정 메타정보확인");
-
+    @DisplayName("빈 설정 메타정보확인")
     void findApplicationBean() {
         String[] beanDefinitionNames = ac.getBeanDefinitionNames();
         for (String beanDefinitionName : beanDefinitionNames) {
