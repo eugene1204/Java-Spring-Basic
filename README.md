@@ -2242,5 +2242,7 @@ memberRepository = hello.core.member.MemoryMemberRepository@12359a82
 ### 정리
 - ```@Bean```만 사용해도 스프링 빈으로 등록되지만, 싱글톤을 보장하지 않는다.
   - ```memberRepository()``` 처럼 의존관계 주입이 필요해서 메서드를 직접 호출할 때 싱글톤을 보장하지 않는다.
+  - DI 주입이 안되게 된다. 마치 ```private MemberRepository memberRepository = new new MemoryMemberRepository();``` 와 같다.
+
 - 크게 고민할 것이 없다. 스프링 설정 정보는 항상 ```@Configuration``` 을 사용하자.
 
