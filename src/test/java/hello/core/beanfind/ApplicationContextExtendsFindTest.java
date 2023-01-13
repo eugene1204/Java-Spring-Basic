@@ -7,6 +7,7 @@ import hello.core.member.MemberService;
 import hello.core.member.MemberServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import
         org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -16,16 +17,18 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+
+import static org.junit.Assert.assertThrows;
+
 public class ApplicationContextExtendsFindTest {
     AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(TestConfig.class);
     @Test
     @DisplayName("부모타입으로 조회시 자식이 둘이상있으면, 중복 오류가 발생")
     void findBeanByParentTypeDuplicate() {
 //        DiscountPolicy bean = ac.getBean(DiscountPolicy.class);
-        assertThrows(NoUniqueBeanDefinitionException.class, () ->
+        assertThrows(NoUniqueBeanDefinitionException.class, (Executable) () ->
                 ac.getBean(DiscountPolicy.class));
     }
-    @Test
     @DisplayName("부모타입으로 조회시 자식이 둘이상있으면, 빈이름 지정")
     void findBeanByParentTypeBeanName() {
         DiscountPolicy rateDiscountPolicy = ac.getBean("rateDiscountPolicy", DiscountPolicy.class);
