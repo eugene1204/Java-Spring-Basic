@@ -228,15 +228,15 @@
 
 ### 도매인 협력관계 
 ***사진***
-![img.png](img.png)
+![img.png](src/picture/img.png)
 
 ### 회원 클래스 다이어그램
 ***사진***
-![img_1.png](img_1.png)
+![img_1.png](src/picture/img_1.png)
 
 ### 회원 객체 다이어그램 
 ***사진***
-![img_2.png](img_2.png)
+![img_2.png](src/picture/img_2.png)
 
 > 실제 서버에 올라온다면 객체간의 참조가 어떻게 되는지
 > 회원서비스: MemberServiceImpl
@@ -424,16 +424,16 @@ public class MemberServiceTest {
 2. ***회원 조회***: 할인을 위해서는 회원 등급이 필요하다. 그래서 주문 서비스는 회원 저장소에서 회원을 조회한다.
 3. ***할인 적용***: 주문 서비스는 회원 등급에 따른 할인 여부를 할인 정책에 위임한다. 
 4. ***주문 결과 반환***: 주문 서비스는 할인 결과를 포함한 주문 결과를 반환한다.
-![img_12.png](img_12.png)
+![img_12.png](src/picture/img_12.png)
 
 ### 주문 도메인 전체
 
-![img_11.png](img_11.png)
+![img_11.png](src/picture/img_11.png)
 
 > 정액은 항상 1000원할인, 정률은 2만원사면 얼마 얼마,,,
 
 #### 주문도메인 객체 다이어그램
-![img_13.png](img_13.png)
+![img_13.png](src/picture/img_13.png)
 
 
 > 협력관계를 그대로 재사용 할 수 있다. 주문 서비스 구현체를 바꾸지 않아도 된다.  
@@ -442,7 +442,7 @@ public class MemberServiceTest {
 - 주문도메인 객체 다이어그램1 : 회원을 메모리에서 조회하고, 정액 할인 정책(고정 금액)을 지원해도 주문 서비스를 변경하지 않아도 된다. 역할들의 협력 관계를 그대로 재사용 할 수 있다.
 - 주문도메인 객체 다이어그램2 : 회원을 메모리가 아닌 실제 DB에서 조회하고, 정률 할인 정책(주문 금액에 따라 % 할인)을 지원해도 주문 서비스를 변경하지 않아도 된다.
   협력 관계를 그대로 재사용 할 수 있다.
-![img_14.png](img_14.png)
+![img_14.png](src/picture/img_14.png)
 
 
 ### 주문과 할인 도메인 개발 
@@ -655,7 +655,7 @@ public class OrderServiceTest {
 - 새로운 정률할인 정책을 추가하자
 
 ### RateDiscountPolicy 추가 
-![img_3.png](img_3.png)
+![img_3.png](src/picture/img_3.png)
 
 ### RateDiscountPolicy 코드
 ```
@@ -737,15 +737,15 @@ private final DiscountPolicy discountPolicy = new RateDiscountPolicy();
 ### 왜 클라이언트 코드를 변경해야 할까?
 #### 기대했던 의존관계
 - ```DiscountPolicy``` 인터페이스만 의존한다고 생각했다. 
-![img_3.png](img_3.png)
+![img_3.png](src/picture/img_3.png)
 
 #### 실제 의존관계
 - 잘보면 클라이언트인 ```OrderServiceImpl```이 ```DiscountPlicy```인터페이스 뿐만 아니라 ```FixDiscountPolicy```인 구체 클래스도 함께 의존하고 있다. 실제코드를 보면 의존하고 있다 -> DIP 위반
-![img_4.png](img_4.png)
+![img_4.png](src/picture/img_4.png)
 
 #### 정책 변경 
 - ```FixDiscountPolicy```를 ```RateDiscount```로 변경하려면 ```OrderServiceImpl```의 소스코드도 함께 변경해야 한다. -> OCP 위반
-![img_5.png](img_5.png)
+![img_5.png](src/picture/img_5.png)
 
 ### 어떻게 문제를 해결할 수 있을까?
 - 클라이언트 코드인 ```OrderServiceImpl```은 ```DiscountPlicy```의 인터페이스 뿐만 아니라 구체 클래스도 함께 의존한다.
@@ -754,7 +754,7 @@ private final DiscountPolicy discountPolicy = new RateDiscountPolicy();
 - DIP를 위반하지 않도록 인터페이스에만 의존하도록 의존관계를 변경하면 된다. 
 
 #### 인터페이스에만 의존하도록 설계를 변경하자
-![img_3.png](img_3.png)
+![img_3.png](src/picture/img_3.png)
 
 #### 인터페이스에만 의존하도록 코드변경
 - 인터페이스에만 의존하도록 설계와 코드를 변경했다.
@@ -841,7 +841,7 @@ public class MemberServiceImpl implements MemberService{
 - 객체의 생성과 연결은 AppConfig가 담당한다.
 - DIP 완성 : MemberServiceImpl은 MemberRepository인 추상에만 의존하면된다. 이제 구체 클래스를 몰라도 된다. 
 - 관심사의 분리 : 객체를 생성하고 연결하는 역할과 실행하는 역할이 명확히 분리되었다. 
-![img_6.png](img_6.png)
+![img_6.png](src/picture/img_6.png)
 
 > AppConfig는 MemberServiceImpl, MemoryMemberRepository 를 생성한다.
 
@@ -850,7 +850,7 @@ public class MemberServiceImpl implements MemberService{
 - 클라이언트인 memberServiceImpl 입장에서 보면 의존관계를 마치 외부에서 주입해주는 것 같다고 해서 DI(Dependency Injection) 우리말로 의존관계 주입 또는 의존성 주입이라고 한다.
 
 
-![img_7.png](img_7.png)
+![img_7.png](src/picture/img_7.png)
 
 #### OrderServiceImpl - 생성자 주입
 - 설계 변경으로 ```OrderServiceImpl```은 ```FixDiscountPolicy```를 의존하지 않는다. 
@@ -1018,7 +1018,7 @@ public class OrderServiceTest {
 
 ## AppConfig 리팩터링 
 ### 기대하는 그림 
-![img_8.png](img_8.png)
+![img_8.png](src/picture/img_8.png)
 
 
 ### 리팩터링 후 
@@ -1066,11 +1066,11 @@ AppConfig의 등장으로 애플리케이션이 크게 사용 영역과, 객체�
 ***```AppConfig```의 등장으로 애플리케이션이 크게 사용 영역과, 객체를 생성하고 구성(Configuration)하는 영역으로 분리되었다.***
 > 정액 할인 -> 정률 할인 정책 만들기
 
-![img_9.png](img_9.png)
+![img_9.png](src/picture/img_9.png)
 
 #### 그림 - 할인 정책의 변경
 - FixDiscountPolicy -> RateDiscountPolicy로 변경해도 구성 영역만 영향을 받고, 사용 영역은 전혀 영향을 받지 않는다.
-![img_10.png](img_10.png)
+![img_10.png](src/picture/img_10.png)
 
 
 #### 할인 정책 변경 구성 코드
@@ -1346,7 +1346,8 @@ ApplicationContext applicationContext = new AnnotationConfigApplicationContext(A
 #### 1. 스프링 컨테이너 생성 
 - ```new AnnotationConfigApplicationContext(AppConfig.class)```
 - 스프링 컨테이너를 생성할 때는 구성 정보를 지정해주어야 한다. 
-- 여기서는 ```AppConfig.class``` 를 구성 정보로 지정했다.
+- 여기서는 ```AppConfig.class``` 를 구성 정보로 지정했다.링
+![img_15.png](src/picture/img_15.png)
 
 #### 2. 스프링 빈 등록 
 - 스프링 컨테이너는 파라미터로 넘어온 설정 클래스 정보를 사용해서 스프링 빈을 등록한다.
@@ -1355,11 +1356,14 @@ ApplicationContext applicationContext = new AnnotationConfigApplicationContext(A
   - ```@Bean(name="memberService2")```
   - 단, 빈 이름은 항상 다른 이름을 부여해야 한다. 같은 이름을 부여하면, 다른 빈이 무시되거나, 기존 빈을 덮어버리거나 설정에 따라 오류가 발생한다.
 
-#### 3. 스프링 빈 의존관계 설정 - 준비 
+![img_16.png](src/picture/img_16.png)
 
+#### 3. 스프링 빈 의존관계 설정 - 준비 
+![img_17.png](src/picture/img_17.png)
 #### 4. 스프링 빈 의존관계 설정 - 완료 
 - 스프링 컨테이너는 설정 정보를 참고해서 의존관계를 주입(DI)한다.
 - 단순히 자바 코드를 호출하는 것 같지만, 차이가 있다. 이 차이는 뒤에 싱글톤 컨테이너에서 설명한다.
+![img_18.png](src/picture/img_18.png)
 
 #### 참고 
 - 스프링은 빈을 생성하고, 의존관계를 주입하는 단계가 나누어져 있다. 그런데 이렇게 자바 코드로 스프링 빈을 등록하면 생성자를 호출하면서 의존관계 주입도 한번에 처리된다. 여기서는 이해를 돕기 위해 개념적으로 나누어 설명했다. 자세한 내용은 의존관계 자동 주입에서 다시 설명하겠다.
@@ -1546,6 +1550,9 @@ public class ApplicationContextSameBeanFindTest {
 ## 스프링 빈 조회 - 상속관계
 - 부모 타입으로 조회하면, 자식 타입도 함께 조회한다.
 - 그래서 모든 자바 객체의 최고 부모인 Object 타입으로 조회하면, 모든 스프링 빈을 조회한다.
+
+![img_19.png](src/picture/img_19.png)
+
 ```
 package hello.core.beanfind;
 
@@ -1626,7 +1633,8 @@ public class ApplicationContextExtendsFindTest {
 ## BeanFactory와 ApplicationContext
 > BeanFactory는 최상위를 상속받은 ApplicationContext
 > ApplicationContext는 빈팩토리에 부가기능을 추가함 
- 
+
+![img_20.png](src/picture/img_20.png)
 
 ### BeanFactory
 - 스프링 컨테이너의 최상위 인터페이스다.
@@ -1652,10 +1660,17 @@ public class ApplicationContextExtendsFindTest {
 ApplicationContext는 BeanFactory의 기능을 상속받는다.
 ApplicationContext는 빈 관리기능 + 편리한 부가 기능을 제공한다.
 BeanFactory를 직접 사용할 일은 거의 없다. 부가기능이 포함된 ApplicationContext를 사용한다. BeanFactory나 ApplicationContext를 스프링 컨테이너라 한다.
+
 ## 다양한 설정 형식 지원 - 자바 코드, XML
+- 스프링 컨테이너는 다양한 형식의 설정 정보를 받아드릴 수 있게 유연하게 설계되어 있다.
+  - 자바 코드, XML, Groovy 등등
+
+![img_21.png](src/picture/img_21.png)
+
 ### 애노테이션 기반 자바 코드 설정 사용
 - 지금까지 했던 것이다.
 - new AnnotationConfigApplicationContext(AppConfig.class) AnnotationConfigApplicationContext 클래스를 사용하면서 자바 코드로된 설정 정보를 넘기면 된다.
+
 ### XML 설정 사용
 - 최근에는 스프링 부트를 많이 사용하면서 XML기반의 설정은 잘 사용하지 않는다. 아직 많은 레거시
 - 프로젝트 들이 XML로 되어 있고, 또 XML을 사용하면 컴파일 없이 빈 설정 정보를 변경할 수 있는 장점도 있으므로 한번쯤 배워두는 것도 괜찮다.
@@ -1714,10 +1729,25 @@ public class XmlAppContext {
 - 스프링 컨테이너는 이 메타정보를 기반으로 스프링 빈을 생성한다.
 > 스프링컨테이너는 BeanDefinition(추상화된 인터페이스)에만 의존한다
 
+![img_22.png](src/picture/img_22.png)
+
 ### 깊이 알아보자 
+![img_23.png](src/picture/img_23.png)
 - AnnotationConfigApplicationContext 는 AnnotatedBeanDefinitionReader 를 사용해서 AppConfig.class 를 읽고 BeanDefinition 을 생성한다.
 - GenericXmlApplicationContext 는 XmlBeanDefinitionReader 를 사용해서 appConfig.xml 설정 정보를 읽고 BeanDefinition 을 생성한다.
 - 새로운 형식의 설정 정보가 추가되면, XxxBeanDefinitionReader를 만들어서 BeanDefinition 을 생성하면 된다.
+
+
+### BeanDefinition 살펴보기
+#### BeanDefinition 정보
+- BeanClassName: 생성할 빈의 클래스 명(자바 설정 처럼 팩토리 역할의 빈을 사용하면 없음) 
+- factoryBeanName: 팩토리 역할의 빈을 사용할 경우 이름, 예) appConfig 
+- factoryMethodName: 빈을 생성할 팩토리 메서드 지정, 예) memberService
+- Scope: 싱글톤(기본값)
+- lazyInit: 스프링 컨테이너를 생성할 때 빈을 생성하는 것이 아니라, 실제 빈을 사용할 때 까지 최대한 생성을 지연처리 하는지 여부
+- InitMethodName: 빈을 생성하고, 의존관계를 적용한 뒤에 호출되는 초기화 메서드 명 
+- DestroyMethodName: 빈의 생명주기가 끝나서 제거하기 직전에 호출되는 메서드 명 
+- Constructor arguments, Properties: 의존관계 주입에서 사용한다. (자바 설정 처럼 팩토리 역할의 빈을 사용하면 없음)
 ```
 package hello.core.beandefinition;
 import hello.core.AppConfig;
@@ -1758,6 +1788,8 @@ public class BeanDefinitionTest {
 - 웹 애플리케이션은 보통 여러 고객이 동시에 요청을 한다.
 
 > 요청마다 객체를 생성해야하면 너무 많이 호출되어야함.. 이게 문제! 
+
+![img_24.png](src/picture/img_24.png)
 
 ### 스프링 없는 순수한 DI 컨테이너 테스트
 - 우리가 만들었던 스프링 없는 순수한 DI 컨테이너인 AppConfig는 요청을 할 때 마다 객체를 새로 생성한다.
@@ -1912,6 +1944,8 @@ public class SingletonServiceTest {
 - 스프링 컨테이너 덕분에 고객의 요청이 올 때 마다 객체를 생성하는 것이 아니라, 이미 만들어진 객체를 공유해서 효율적으로 재사용할 수 있다.
 - 참고: 스프링의 기본 빈 등록 방식은 싱글톤이지만, 싱글톤 방식만 지원하는 것은 아니다. 요청할 때 마다 새로운 객체를 생성해서 반환하는 기능도 제공한다. 
 - 자세한 내용은 뒤에 빈 스코프에서 설명하겠다.
+
+![img_25.png](src/picture/img_25.png)
 
 ## 싱글톤 방식의 주의점
 - 싱글톤 패턴이든, 스프링 같은 싱글톤 컨테이너를 사용하든, 객체 인스턴스를 하나만 생성해서 공유하는 싱글톤 방식은 여러 클라이언트가 하나의 같은 객체 인스턴스를 공유하기 때문에 싱글톤 객체는 상태를 유지(stateful)하게 설계하면 안된다.
@@ -2205,6 +2239,7 @@ class hello.core.AppConfig
 
 ### 그림 
 - 그 임의의 다른 클래스가 바로 싱글톤이 보장되도록 해준다. 아마도 다음과 같이 바이트 코드를 조작해서 작성되어 있을 것이다.(실제로는 CGLIB의 내부 기술을 사용하는데 매우 복잡하다.)
+![img_26.png](src/picture/img_26.png)
 
 ### AppConfig@CGLIB 예상 코드
 - ```@Bean```이 붙은 메서드마다 이미 스프링 빈이 존재하면 존재하는 빈을 반환하고, 스프링 빈이 없으면 생성해서 스프링 빈으로 등록하고 반환하는 코드가 동적으로 만들어진다.
@@ -2401,13 +2436,14 @@ public class AutoAppConfigTest {
   - 빈 이름 기본 전략: MemberServiceImpl 클래스 memberServiceImpl
   - 빈 이름 직접 지정: 만약 스프링 빈의 이름을 직접 지정하고 싶으면 @Component("memberService2") 이런식으로 이름을 부여하면 된다.
 
+![img_27![img_7.png]]
 #### 2. @Autowired 의존관계 자동 주입
 - 생성자에 @Autowired 를 지정하면, 스프링 컨테이너가 자동으로 해당 스프링 빈을 찾아서 주입한다. 
 - 이때 기본 조회 전략은 타입이 같은 빈을 찾아서 주입한다.
   - getBean(MemberRepository.class) 와 동일하다고 이해하면 된다. 
   - 더 자세한 내용은 뒤에서 설명한다.
 
-***사진***
+![img_27![img_7.png](img_7.png)
 
 - 생성자에 파라미터가 많아도 다 찾아서 자동으로 주입한다.
 
