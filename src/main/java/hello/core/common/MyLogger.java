@@ -21,7 +21,9 @@ public class MyLogger {
     }
     public void log(String message){
         System.out.println("["+uuid+"]"+"["+requestURL+"]"+message);
-    }
+
+
+
 
     @PostConstruct
     public void init() {
